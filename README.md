@@ -23,7 +23,46 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+# Job Matching Platform
+
+An AI-powered job matching platform built with **NestJS**, **TypeScript**, **PostgreSQL**, and **pgvector** that automatically matches candidate resumes with job descriptions using semantic search and LLM-generated insights.
+
+## Features
+
+- Secure authentication for Recruiters and Candidates
+- Resume upload and text extraction
+- Candidate skill management
+- Job posting and management
+- Bulk job import (CSV/Excel)
+- Automatic job and resume text generation
+- Vector embeddings with **pgvector**
+- Semantic candidate-job matching using cosine similarity
+- Weighted matching based on skills, experience, and semantic relevance
+- AI-generated match explanations highlighting strengths, skill gaps, and recruiter-ready pitches
+- Embedding and explanation caching to reduce unnecessary AI calls
+- Scheduled nightly job matching
+- Rate-limited matching API for production readiness
+
+## Tech Stack
+
+- **Backend:** NestJS, TypeScript
+- **Database:** PostgreSQL, Prisma ORM, pgvector
+- **AI:** OpenAI / Gemini / Ollama
+- **Authentication:** JWT
+- **File Upload:** Multer
+- **Scheduling:** @nestjs/schedule
+
+## Workflow
+
+1. Recruiters create or bulk import job descriptions.
+2. Candidates upload resumes and manage their skills.
+3. The platform extracts and normalizes job and resume content.
+4. Embeddings are generated and stored using pgvector.
+5. Semantic similarity is used to identify the best candidate matches.
+6. An LLM generates recruiter-friendly explanations, including strengths, skill gaps, and a concise hiring pitch.
+7. Results are cached and automatically refreshed when job descriptions or resumes change.
+
+This project demonstrates how modern AI techniques—including embeddings, vector search, semantic similarity, and large language models—can be integrated into a production-ready recruitment workflow to improve hiring efficiency and candidate matching.
 
 ## Project setup
 
