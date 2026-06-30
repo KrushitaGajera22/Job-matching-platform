@@ -1,0 +1,141 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id               String     @id @default(uuid())
+  email            String     @unique
+  password         String
+  role             Role
+  isActive         Boolean    @default(true)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  candidate        Candidate?
+  jobs             Job[]
+}
+
+model Candidate {
+  id              String           @id @default(uuid())
+  userId          String           @unique
+  firstName       String
+  lastName        String
+  phone           String?
+  location        String?
+  currentTitle    String?
+  yearsExperience Int?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  user            User             @relation(fields: [userId], references: [id])
+  skills          CandidateSkill[]
+  matchResults    MatchResult[]
+  resume          Resume?
+}
+
+model Skill {
+  id         String           @id @default(uuid())
+  name       String           @unique
+  isActive   Boolean          @default(true)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  candidates CandidateSkill[]
+  jobs       JobSkill[]
+}
+
+model CandidateSkill {
+  candidateId String
+  skillId     String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  skill       Skill     @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([candidateId, skillId])
+}
+
+model Resume {
+  id            String    @id @default(uuid())
+  candidateId   String    @unique
+  fileName      String
+  fileUrl       String
+  fileSize      Int?
+  uploadedAt    DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  mimeType      String?
+  extractedText String?
+  textHash      String?
+  candidate     Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+}
+
+model Job {
+  id            String        @id @default(uuid())
+  title         String
+  description   String
+  location      String?
+  minExperience Int?
+  maxExperience Int?
+  isPublished   Boolean       @default(true)
+  expiresAt     DateTime?
+  recruiterId   String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  extractedText String?
+  textHash      String?
+  recruiter     User          @relation(fields: [recruiterId], references: [id])
+  skills        JobSkill[]
+  matchResults  MatchResult[]
+}
+
+model JobSkill {
+  jobId     String
+  skillId   String
+  createdAt DateTime @default(now())
+  id        String   @id @default(uuid())
+  job       Job      @relation(fields: [jobId], references: [id])
+  skill     Skill    @relation(fields: [skillId], references: [id])
+
+  @@unique([jobId, skillId])
+}
+
+model Embedding {
+  id         String                 @id @default(uuid())
+  entityType String
+  entityId   String
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+  embedding  Unsupported("vector")?
+
+  @@unique([entityType, entityId])
+}
+
+model MatchResult {
+  id                String    @id @default(uuid())
+  jobId             String
+  candidateId       String
+  vectorScore       Float
+  skillScore        Float
+  experienceScore   Float
+  finalScore        Float
+  strengths         Json?
+  gaps              Json?
+  pitch             String?
+  jobTextHash       String
+  candidateTextHash String
+  generatedAt       DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  candidate         Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  job               Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, candidateId])
+}
+
+enum Role {
+  ADMIN
+  RECRUITER
+  CANDIDATE
+}
