@@ -65,7 +65,7 @@ export class JobsController {
   @Get('dashboard')
   @Roles(Role.RECRUITER)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  dashboard(@CurrentUser() user: any) {
+  async dashboard(@CurrentUser() user: any) {
     return this.jobsService.recruiterDashboard(user.userId);
   }
 

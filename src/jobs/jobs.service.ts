@@ -528,6 +528,11 @@ export class JobsService {
     });
 
     const topMatches = await this.prisma.matchResult.findMany({
+      where: {
+        job: {
+          recruiterId: userId,
+        },
+      },
       take: 5,
       orderBy: {
         finalScore: 'desc',

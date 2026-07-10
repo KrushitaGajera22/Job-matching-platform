@@ -113,7 +113,6 @@ export class AuthService {
     });
 
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
-    console.log('resetLink: ', resetLink);
     await this.mailService.sendPasswordResetEmail(user.email, resetLink);
 
     return {

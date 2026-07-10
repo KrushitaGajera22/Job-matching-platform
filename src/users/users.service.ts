@@ -135,23 +135,38 @@ export class UsersService {
 
     const [totalJobs, publishedJobs, draftJobs, totalMatches, recentJobs] =
       await Promise.all([
-        this.prisma.job.count(),
+        this.prisma.job.count({
+          where: {
+            recruiterId: recruiter.id,
+          },
+        }),
 
         this.prisma.job.count({
           where: {
             isPublished: true,
+            recruiterId: recruiter.id,
           },
         }),
 
         this.prisma.job.count({
           where: {
             isPublished: false,
+            recruiterId: recruiter.id,
           },
         }),
 
-        this.prisma.matchResult.count(),
+        this.prisma.matchResult.count({
+          where: {
+            job: {
+              recruiterId: recruiter.id,
+            },
+          },
+        }),
 
         this.prisma.job.findMany({
+          where: {
+            recruiterId: recruiter.id,
+          },
           take: 5,
           orderBy: {
             createdAt: 'desc',

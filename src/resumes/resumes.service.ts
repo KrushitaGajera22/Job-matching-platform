@@ -57,7 +57,6 @@ export class ResumesService {
       extractedText = await this.resumeParserService.extractText(
         join(process.cwd(), fileUrl),
       );
-      console.log(extractedText.includes('\0'));
     } catch (error) {
       console.log(`Resume parsing failed: ${error}`);
     }
@@ -92,7 +91,6 @@ export class ResumesService {
     if (!text) {
       throw new BadRequestException('Resume extracted text not found');
     }
-    console.log(text.includes('\0'));
     const MAX_CHARS = 2000;
     const shortText = text.length > MAX_CHARS ? text.slice(0, MAX_CHARS) : text;
 
