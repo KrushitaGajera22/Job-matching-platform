@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -16,6 +17,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../../generated/prisma/enums';
 import { UpdateSkillDto } from './dto/update-skill.dto';
 import { ActiveDeactiveSkillDto } from './dto/active-deactive-skill.dto';
+import { GetSkillsDto } from './dto/get-skills.dto';
 
 @Controller('skills')
 export class SkillsController {
@@ -38,11 +40,8 @@ export class SkillsController {
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  async getSkills(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-  ) {
-    return this.skillService.getSkills(page, limit);
+  getSkills(@Query() query: GetSkillsDto) {
+    return this.skillService.getSkills(query);
   }
 
   @Get(':id')
@@ -57,5 +56,12 @@ export class SkillsController {
   @Roles(Role.ADMIN)
   async activeDeactiveSkill(@Body() data: ActiveDeactiveSkillDto) {
     return this.skillService.activeDeactiveSkill(data);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  async deleteSkill(@Param('id') id: string) {
+    return this.skillService.deleteSkill(id);
   }
 }

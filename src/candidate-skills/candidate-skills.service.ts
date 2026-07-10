@@ -109,6 +109,7 @@ export class CandidateSkillsService {
               select: {
                 id: true,
                 name: true,
+                isActive: true,
               },
             },
           },
@@ -125,10 +126,12 @@ export class CandidateSkillsService {
 
   async getSkills() {
     return this.prisma.skill.findMany({
-      where: {
+      select: {
+        id: true,
+        name: true,
         isActive: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { name: 'asc' },
     });
   }
 }

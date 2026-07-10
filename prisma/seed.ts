@@ -18,6 +18,8 @@ async function main() {
     where: { email: process.env.ADMIN_EMAIL! },
     update: {},
     create: {
+      firstName: 'Admin',
+      lastName: 'User',
       email: process.env.ADMIN_EMAIL!,
       password: hashedPassword,
       role: 'ADMIN', // 2. Added the required role field!

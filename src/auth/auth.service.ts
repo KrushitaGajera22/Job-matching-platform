@@ -4,13 +4,14 @@ import { RegisterDto } from './dto/register.dto';
 import bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
-import { CreateRecruiterUserData } from './dto/create-recruiter.dto';
 import { randomBytes } from 'crypto';
 import { MailService } from '../common/mail/mail.service';
 import { ForgotPasswordDto } from './dto/forget-password.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Role } from '../../generated/prisma/enums';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { CreateRecruiterUserData } from './dto/create-recruiter.dto';
 
 @Injectable()
 export class AuthService {
@@ -74,13 +75,15 @@ export class AuthService {
   async createRecruiter(data: CreateRecruiterUserData) {
     const existingUser = await this.usersService.findByEmail(data.email);
     if (existingUser) {
-      throw new BadRequestException('Candidate already exists!');
+      throw new BadRequestException('Recruiter already exists!');
     }
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
     return this.usersService.createRecruiter({
       email: data.email,
       password: hashedPassword,
+      firstName: data.firstName,
+      lastName: data.lastName,
     });
   }
 
@@ -110,6 +113,7 @@ export class AuthService {
     });
 
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    console.log('resetLink: ', resetLink);
     await this.mailService.sendPasswordResetEmail(user.email, resetLink);
 
     return {
@@ -141,6 +145,38 @@ export class AuthService {
 
     return {
       message: 'Password reset successfully.',
+    };
+  }
+
+  async changePassword(userId: string, data: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const isMatch = await bcrypt.compare(data.oldPassword, user.password);
+    if (!isMatch) {
+      throw new BadRequestException('Password do not match');
+    }
+
+    const password = await bcrypt.hash(data.password, 10);
+    await this.prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        password,
+        updatedAt: new Date(),
+      },
+    });
+
+    return {
+      message: 'Password changed successfully!',
     };
   }
 }

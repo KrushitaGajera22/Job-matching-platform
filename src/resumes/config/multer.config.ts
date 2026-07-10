@@ -2,7 +2,6 @@ import { BadRequestException } from '@nestjs/common';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { randomUUID } from 'crypto';
-
 import {
   ALLOWED_RESUME_MIME_TYPES,
   MAX_RESUME_SIZE,
@@ -25,10 +24,7 @@ export const resumeUploadOptions = {
     if (ALLOWED_RESUME_MIME_TYPES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(
-        new BadRequestException('Only PDF, DOC and DOCX files are allowed'),
-        false,
-      );
+      cb(new BadRequestException('Only PDF files are allowed'), false);
     }
   },
 };

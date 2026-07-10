@@ -15,6 +15,7 @@ export class MatchingService {
     const job = await this.prisma.job.findUnique({
       where: {
         id: jobId,
+        isPublished: true,
       },
       include: {
         skills: true,

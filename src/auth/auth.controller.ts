@@ -9,6 +9,8 @@ import { Role } from '../../generated/prisma/enums';
 import { CreateRecruiterUserData } from './dto/create-recruiter.dto';
 import { ForgotPasswordDto } from './dto/forget-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { CurrentUser } from '../common/decorators/current-user-decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -32,12 +34,21 @@ export class AuthController {
   }
 
   @Post('forgot-password')
-  forgotPassword(@Body() dto: ForgotPasswordDto) {
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto);
   }
 
   @Post('reset-password')
-  resetPassword(@Body() dto: ResetPasswordDto) {
+  async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  async changePassword(
+    @CurrentUser() user: any,
+    @Body() data: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(user.userId, data);
   }
 }

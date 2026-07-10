@@ -24,7 +24,10 @@ export class ResumesController {
   @Roles(Role.CANDIDATE)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(FileInterceptor('resume', resumeUploadOptions))
-  uploadResume(@CurrentUser() user, @UploadedFile() file: Express.Multer.File) {
+  uploadResume(
+    @CurrentUser() user: any,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     if (!file) {
       throw new BadRequestException('Resume file is required.');
     }
@@ -42,7 +45,7 @@ export class ResumesController {
   @Get()
   @Roles(Role.CANDIDATE)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  getResume(@CurrentUser() user) {
+  getResume(@CurrentUser() user: any) {
     return this.resumesService.getResume(user.userId);
   }
 }

@@ -15,7 +15,7 @@ export class CandidateSkillsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CANDIDATE)
   async upsertSkills(
-    @CurrentUser() user,
+    @CurrentUser() user: any,
     @Body() data: UpsertCandidateSkillsDto,
   ) {
     return this.candidateSkillService.upsertSkills(user.userId, data);
@@ -31,7 +31,7 @@ export class CandidateSkillsController {
   @Get('skills')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CANDIDATE)
-  async getSkillsForUser(@CurrentUser() user) {
+  async getSkillsForUser(@CurrentUser() user: any) {
     return this.candidateSkillService.getSkillsForUser(user.userId);
   }
 }

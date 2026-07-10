@@ -72,6 +72,7 @@ export class ResumesService {
         mimeType: file.mimetype,
         fileSize: file.size,
         extractedText,
+        uploadedAt: new Date(),
       },
       create: {
         candidateId: candidate.id,

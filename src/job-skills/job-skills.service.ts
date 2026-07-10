@@ -43,11 +43,11 @@ export class JobSkillsService {
       },
     });
 
-    if (skills.length !== uniqueSkillIds.length) {
-      throw new BadRequestException(
-        'One or more skills are invalid or inactive',
-      );
-    }
+    // if (skills.length !== uniqueSkillIds.length) {
+    //   throw new BadRequestException(
+    //     'One or more skills are invalid or inactive',
+    //   );
+    // }
 
     // Get current candidate skills
     const existingSkills = await this.prisma.jobSkill.findMany({
@@ -142,14 +142,12 @@ export class JobSkillsService {
 
   async getSkills() {
     return this.prisma.skill.findMany({
-      where: {
-        isActive: true,
-      },
       select: {
         id: true,
         name: true,
+        isActive: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { name: 'asc' },
     });
   }
 }

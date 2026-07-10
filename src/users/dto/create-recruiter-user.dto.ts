@@ -1,4 +1,10 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  isNotEmpty,
+  IsNotEmpty,
+  IsString,
+  MinLength,
+} from 'class-validator';
 
 export class CreateRecruiterUserData {
   @IsEmail()
@@ -9,4 +15,14 @@ export class CreateRecruiterUserData {
   @IsNotEmpty()
   @MinLength(8)
   password!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(1)
+  firstName!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(1)
+  lastName!: string;
 }

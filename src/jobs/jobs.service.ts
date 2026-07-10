@@ -20,6 +20,17 @@ import { unlink } from 'fs/promises';
 import csv from 'csv-parser';
 import { extname } from 'path';
 import * as XLSX from 'xlsx';
+import { RecruiterJobDashboardDto } from './dto/recruiter-job-dashboard.dto';
+import { MatchedCandidateQueryDto } from './dto/matched-candidate-query.dto';
+
+// Define a type that extends the Job model with the optional skills relation
+type JobWithSkills = Job & {
+  skills?: {
+    skill: {
+      name: string;
+    };
+  }[];
+};
 
 @Injectable()
 export class JobsService {
@@ -30,7 +41,7 @@ export class JobsService {
     private readonly hashService: HashService,
   ) {}
 
-  private mapJobResponse(job: Job): JobResponseDto {
+  private mapJobResponse(job: JobWithSkills): JobResponseDto {
     return {
       id: job.id,
       title: job.title,
@@ -43,6 +54,8 @@ export class JobsService {
       isPublished: job.isPublished,
 
       expiresAt: job.expiresAt,
+      // Safely map skills if they are loaded, otherwise default to an empty array
+      skills: job.skills?.map((jobSkill) => jobSkill.skill.name) || [],
 
       recruiterId: job.recruiterId,
 
@@ -131,6 +144,13 @@ export class JobsService {
       where: {
         id,
       },
+      include: {
+        skills: {
+          include: {
+            skill: true,
+          },
+        },
+      },
     });
 
     if (!job) {
@@ -166,6 +186,13 @@ export class JobsService {
     const [jobs, total] = await this.prisma.$transaction([
       this.prisma.job.findMany({
         where,
+        include: {
+          skills: {
+            include: {
+              skill: true,
+            },
+          },
+        },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: {
@@ -178,6 +205,62 @@ export class JobsService {
       }),
     ]);
 
+    return {
+      data: jobs.map((job) => this.mapJobResponse(job)),
+
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getJobs(query: GetJobsDto, userId: string) {
+    const page = query.page;
+    const limit = query.limit;
+
+    const where: Prisma.JobWhereInput = { recruiterId: userId };
+
+    if (query.search) {
+      where.OR = [
+        {
+          title: {
+            contains: query.search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          description: {
+            contains: query.search,
+            mode: 'insensitive',
+          },
+        },
+      ];
+    }
+
+    const [jobs, total] = await this.prisma.$transaction([
+      this.prisma.job.findMany({
+        where,
+        include: {
+          skills: {
+            include: {
+              skill: true,
+            },
+          },
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+
+      this.prisma.job.count({
+        where,
+      }),
+    ]);
     return {
       data: jobs.map((job) => this.mapJobResponse(job)),
 
@@ -249,6 +332,13 @@ export class JobsService {
     const [jobs, total] = await this.prisma.$transaction([
       this.prisma.job.findMany({
         where,
+        include: {
+          skills: {
+            include: {
+              skill: true,
+            },
+          },
+        },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: {
@@ -271,6 +361,30 @@ export class JobsService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  async delete(id: string, userId: string, role: Role) {
+    const job = await this.prisma.job.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!job) {
+      throw new BadRequestException('Job not found');
+    }
+
+    if (role === Role.RECRUITER && job.recruiterId !== userId) {
+      throw new ForbiddenException('You can only delete your own jobs');
+    }
+
+    await this.prisma.job.delete({
+      where: {
+        id,
+      },
+    });
+
+    return { message: 'Job deleted successfully' };
   }
 
   async regenerateJobText(jobId: string): Promise<string | void> {
@@ -369,6 +483,177 @@ export class JobsService {
       imported,
       failed: rows.length - imported,
       errors,
+    };
+  }
+
+  async recruiterDashboard(userId: string): Promise<RecruiterJobDashboardDto> {
+    const recruiter = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+        role: Role.RECRUITER,
+      },
+    });
+
+    if (!recruiter) {
+      throw new NotFoundException('Recruiter not found');
+    }
+
+    const activeJobs = await this.prisma.job.count({
+      where: {
+        recruiterId: userId,
+        isPublished: true,
+      },
+    });
+    const draftJobs = await this.prisma.job.count({
+      where: {
+        recruiterId: userId,
+        isPublished: false,
+      },
+    });
+
+    const recentJobs = await this.prisma.job.findMany({
+      where: {
+        recruiterId: userId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        id: true,
+        title: true,
+        isPublished: true,
+        createdAt: true,
+      },
+      take: 5,
+    });
+
+    const topMatches = await this.prisma.matchResult.findMany({
+      take: 5,
+      orderBy: {
+        finalScore: 'desc',
+      },
+      select: {
+        id: true,
+        jobId: true,
+        candidateId: true,
+        vectorScore: true,
+        skillScore: true,
+        experienceScore: true,
+        finalScore: true,
+
+        candidate: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+
+        job: {
+          select: {
+            id: true,
+            title: true, // Assuming you meant job title
+          },
+        },
+      },
+    });
+
+    return {
+      totalJobsCount: activeJobs + draftJobs,
+      draftJobsCount: draftJobs,
+      activeJobsCount: activeJobs,
+      recentJobs,
+      topMatches,
+    };
+  }
+
+  async getMatchedCandidates(
+    recruiterId: string,
+    query: MatchedCandidateQueryDto,
+  ) {
+    const { page, limit, search, sortBy, sortOrder, jobId } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.MatchResultWhereInput = {
+      job: {
+        recruiterId,
+        ...(jobId && { id: jobId }),
+      },
+      ...(search && {
+        OR: [
+          {
+            candidate: {
+              firstName: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          },
+          {
+            candidate: {
+              lastName: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          },
+          {
+            job: {
+              title: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          },
+        ],
+      }),
+    };
+
+    const [matches, total] = await this.prisma.$transaction([
+      this.prisma.matchResult.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: {
+          [sortBy]: sortOrder,
+        },
+        select: {
+          id: true,
+          jobId: true,
+          candidateId: true,
+          vectorScore: true,
+          skillScore: true,
+          experienceScore: true,
+          finalScore: true,
+          candidate: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          job: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+      }),
+
+      this.prisma.matchResult.count({
+        where,
+      }),
+    ]);
+
+    return {
+      data: matches,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 

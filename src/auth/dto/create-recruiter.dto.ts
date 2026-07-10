@@ -9,4 +9,14 @@ export class CreateRecruiterUserData {
   @IsNotEmpty()
   @MinLength(8)
   password!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(1)
+  firstName!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(1)
+  lastName!: string;
 }
